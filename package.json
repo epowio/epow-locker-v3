@@ -1,0 +1,27 @@
+{
+  "name": "ethw-v3-js",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "compile": "hardhat compile",
+    "clean": "hardhat clean",
+    "deploy:core": "hardhat run scripts/01_deploy_core.js --network ethw",
+    "deploy:periphery": "hardhat run scripts/02_deploy_periphery.js --network ethw",
+    "pool:init": "hardhat run scripts/03_create_init_pool.js --network ethw",
+    "pool:mint": "hardhat run scripts/04_mint_liquidity.js --network ethw"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "6.1.0",
+    "@uniswap/v3-core": "^1.0.1",
+    "@uniswap/v3-periphery": "^1.4.4",
+    "chai": "^4.5.0",
+    "dotenv": "^16.4.5",
+    "hardhat": "2.26.3",
+    "mocha": "^11.7.4"
+  },
+  "dependencies": {
+    "ethers": "^6.13.0",
+    "viem": "^2.37.13",
+    "wagmi": "^2.17.5"
+  }
+}
