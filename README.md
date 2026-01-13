@@ -1,70 +1,62 @@
-# EPOWLocker
+# EPoW Token Creator
 
-`EPOWLocker`  non-custodial Uniswap V3 LP position locker.
+Production-ready ERC20 token + factory for EthereumPoW (ETHW) and other EVM chains.
 
-It escrows Uniswap V3 LP position NFTs (from `INonfungiblePositionManager`) until a specified unlock timestamp. There is no owner backdoor; only the designated beneficiary can withdraw after unlock. While locked, any accrued fees can optionally be collected to a configurable `feesRecipient`.
+This repo contains:
 
-This contract is designed for:
+- `TokenCreator.sol`: ERC20 + burnable + admin controls (mint, freeze, revoke, finalize, metadata).
+- `TokenCreatorFactory.sol`: Factory that mints new `TokenCreator` instances with a fixed creation fee.
+- Hardhat config, test suite, deploy script, and standard JSON exporter for contract verification.
 
-- Locking Uniswap V3 LP NFTs to signal trust and prevent early rug-pulls
-- Allowing the original depositor to configure unlock time and fee routing
-- Enforcing a strict ERC721 receiver gate to reject unsolicited NFTs
-
+---
 
 ## Live Deployment (EthereumPoW)
 
 - **Network:** EthereumPoW (ETHW)
-- **Locker Address:** `0x4fD54E9686e5944697926d1fF231DCfA9f8D4E05`
+- **Token Creator Address:** `0x934389f8B37E40098505cF381f882Fb9D83C3491`
 - **Verified source (OKLink):**  
- https://www.oklink.com/ethereum-pow/address/0x4fd54e9686e5944697926d1ff231dcfa9f8d4e05/contract
+https://www.oklink.com/ethereum-pow/address/0x745356c815f9121c4d5866231ed3f343fdd0c99d/contract
 
 
-## Features
+## Contracts
 
-- Locks Uniswap V3 LP position NFTs (ERC-721) until a specific `unlockTime`
-- Supports:
-  - `lock` via standard `approve()` + `safeTransferFrom`
-  - `lockWithPermit` via `INonfungiblePositionManager.permit()` (gasless approval)
-- No privileged owner functions; no backdoor withdrawals
-- Separate roles:
-  - `depositor`: original locker, can extend lock and adjust fee recipient
-  - `beneficiary`: can withdraw NFT after `unlockTime`
-- Optional fee collection:
-  - Collected fees are sent to `feesRecipient` (default = `beneficiary`)
-- Reentrancy guard on state-changing external calls
-- Strict ERC721 receiver gate:
-  - Only accepts NFTs from the configured `INonfungiblePositionManager`
-  - Only accepts NFTs that were explicitly expected by an internal `lock` or `lockWithPermit` call
+### TokenCreator.sol
 
+ERC20 with:
 
-<!-- npx hardhat flatten contracts/EPOWLocker.sol > flattened/EPOWLocker.flattened.sol -->
+- `ERC20`, `ERC20Burnable`, `Ownable`, `ReentrancyGuard`
+- Owner-only mint with safety flags:
+  - `mintingFrozen` — temporary mint freeze
+  - `mintAuthorityRevoked` — permanent mint disable
+- Hard controls:
+  - `freezeMinting()` / `unfreezeMinting()`
+  - `revokeMintAuthority()` — permanent; cannot be undone
+  - `finalizeToken()` — permanently disables minting and renounces ownership
+- Metadata:
+  - `tokenImageURL` (string)
+  - `tokenDescription` (string)
+  - `setTokenImageURL(...)`, `setTokenDescription(...)`
+  - `getTokenMetadata()` returns `(imageURL, description)`
+- Burning:
+  - `burn(amount)` — holder burns own tokens
+  - `burnFrom(account, amount)` — burns with allowance
 
-## Contract Overview
-
-### Interfaces
-
-- `INonfungiblePositionManager`
-  - Minimal subset of the Uniswap V3 Position Manager interface:
-    - `ownerOf`, `safeTransferFrom`, `getApproved`, `approve`
-    - `permit` for gasless approval
-    - `collect` for fee collection
-
-- `IERC721Receiver`
-  - Standard ERC-721 receiver interface to support `safeTransferFrom`
-
-
-### Storage
+Key constructor:
 
 ```solidity
-struct Lock {
-    address depositor;
-    address beneficiary;
-    address feesRecipient;
-    uint64  unlockTime;
-    bool    active;
+constructor(
+    string memory name,
+    string memory symbol,
+    uint256 initialSupply,
+    string memory imageURL,
+    string memory description,
+    address creator
+) ERC20(name, symbol) Ownable() {
+    _transferOwnership(creator);
+    _mint(creator, initialSupply * 10 ** decimals());
+    ...
 }
 
-INonfungiblePositionManager public immutable posm;
-mapping(uint256 => Lock) public locks;      // tokenId => Lock
-mapping(uint256 => bool)  private _expecting; // tokenId => inbound transfer gate
-uint256 private _status;                    // reentrancy guard
+
+
+

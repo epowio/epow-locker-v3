@@ -1,4 +1,10 @@
+// Sources flattened with hardhat v2.26.3 https://hardhat.org
+
 // SPDX-License-Identifier: MIT
+
+// File contracts/EPOWLocker.sol
+
+// Original license: SPDX_License_Identifier: MIT
 pragma solidity ^0.8.19;
 
 /**
